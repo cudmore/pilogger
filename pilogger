@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Author: Robert H Cudmore
+# Date: 20180505
+#
+# provide a simple nterface to interact with systemctl and pilogger.service
+
+if [ $(id -u) = 0 ]; then
+   echo "Do not run with sudo. Try again without sudo"
+   exit 1
+fi
+
+function usage(){
+    echo "pilogger - Illegal parameters"
+    echo "Usage:"
+    echo "   pilogger start"
+    echo "   pilogger stop"
+    echo "   pilogger restart"
+    echo "   pilogger status"
+    echo "   pilogger enable    - enable pilogger at boot"
+    echo "   pilogger disable   - disable pilogger at boot"
+    echo "   -----------------"
+    echo "   pilogger run     - run pilogger on command line"
+    echo "   pilogger debug     - run pilogger on command line (debug mode)"
+}
+
+myip=`hostname -I | xargs`
+
+case "$1" in
+	start) sudo systemctl start pilogger.service 
+		echo "pilogger server running at http://$myip:5000"
+		;;
+	stop) sudo systemctl stop pilogger.service 
+		echo "pilogger server stopped"
+		;;
+	restart) sudo systemctl restart pilogger.service 
+		echo "pilogger server restarted"
+		;;
+	status) 
+		echo "press 'q' to quit"
+		sudo systemctl status pilogger.service 
+		;;
+	enable) sudo systemctl enable pilogger.service 
+		echo "pilogger will run at boot"
+		;;
+	disable) sudo systemctl disable pilogger.service 
+		echo "pilogger will not run at boot"
+		;;
+	debug) source env/bin/activate
+		python pilogger_app.py debug
+		;;
+	run) source env/bin/activate
+		python pilogger_app.py
+		;;
+	*) usage
+		;;
+esac
+
+#exit 0
