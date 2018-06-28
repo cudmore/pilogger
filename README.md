@@ -1,15 +1,13 @@
 # Raspberry Pi Temperature Logger
 
-Started on June 22, 2018 at 2:35 
-
 ## Requirements
 
 	Raspberry Pi
-	Temparature sensor
+	Temperature sensor like an [AM2302](https://www.adafruit.com/product/393)
 	
 ## Install
 	
-	git cline
+	git clone https://github.com/cudmore/pilogger.git
 	
 	cd pilogger
 	
@@ -17,9 +15,11 @@ Started on June 22, 2018 at 2:35
 	
 ## Usage
 
-Browse the log at http://[IP]:5000
+Browse an up-to-date plot and table of temperature and humidity readings.
 
-Grab the log using a file server
+	http://[IP]:5000
+	
+Grab the log using a file server (make sure you install afp or smb)
 
 	afp://[IP]
 	smb://[IP]
@@ -27,39 +27,6 @@ Grab the log using a file server
 ## Login and control the system
 
 	ssh pi@[IP]
-	# password is raspberry
-	
-## At the Raspberry Pi command prompt
-
-	# return to screen session with
-	screen -r
-	
-	# once in a screen session, detatch (d) from it and keep it running in background
-	# ctrl+a then d
-	
-	# kill the screen session
-	# ctrl+c
-	
-	# run a new instance
-	screen
-	cd ~/fridge_logger
-	python fridge_logger.py
-	
-	# detatch from screen
-	# ctrl+a d
-	
-### Make sure python code is not already running
-
-	ps -aux | grep python
-
-Will give you something like this (different number) if it is already running
-
-	pi         489  0.5  1.3  16444 12672 pts/1    S+   15:39   0:02 python fridge_logger.py
-
-
-## Install System on Pi
-
-	touch /Volumes/boot/ssh
 	
 ## Grab MAC address from router
 
@@ -82,24 +49,6 @@ Tells you, the mac address is
 
 	b8:27:eb:a0:68:1b
 	
-Tell Hopkins to allow it on the network
-
-Go to following address and 'Register For a Fixed IP Address by Subnet' or maybe some other option?
-
-https://jhars.nts.jhu.edu
- 
-Once form is filled out you will get emailed an IP address
-
-## Login
-
-	ssh pi@10.16.81.172
-	# password is raspberry
-	
-## Update system
-
-	sudo apt-get update  
-	sudo apt-get upgrade 
-
 ## Networking
 
 ### AFP
@@ -150,46 +99,3 @@ Restart samba
 
 	sudo /etc/init.d/samba restart
 
-## Install some junk on system (for AdaFruit DHT driver?)
-
-	sudo apt-get install python-pip
-
-
-## Install ADAFruit DHT python library
-
-See [DHT Humidity Sensing on Raspberry Pi](https://learn.adafruit.com/dht-humidity-sensing-on-raspberry-pi-with-gdocs-logging?view=all)
-
-And see the [Adafruit_Python_DHT](https://github.com/adafruit/Adafruit_Python_DHT) GitHub repository.
-
-	# install git
-	sudo apt-get install git
-	
-	git clone https://github.com/adafruit/Adafruit_Python_DHT.git
-
-	# not sure if these are neccessary
-	cd Adafruit_Python_DHT
-	sudo apt-get install build-essential python-dev python-openssl
-
-	sudo python setup.py install
-	
-## Test it, assuming data pin is on GPIO 18
-
-cd examples
-sudo ./AdafruitDHT.py 2302 18
-
-## Write some python code
-
-## Send data to plotly
-
-	# pip install plotly
-	pip install plotly --upgrade
-	
-	
-## To keep your program running after you logout of shell
-
-	sudo apt-get install screen
-	
-	screen
-	python testdht.py
-	# axit screen with ctrl+a then d
-	
