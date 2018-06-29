@@ -15,7 +15,7 @@ from plotly.graph_objs import *
 # (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
 sensor = Adafruit_DHT.AM2302 
 pin = 3
-intervalSeconds = 10 # seconds
+intervalSeconds = 60 # seconds
 
 
 """

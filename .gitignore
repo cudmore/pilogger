@@ -1,4 +1,7 @@
-.AppleDouble
-.DS_Store
+*.pyc
 __pycache__
+
+.AppleDouble/
+.DS_Store/
+
 env/
