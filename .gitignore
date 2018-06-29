@@ -1,7 +1,7 @@
 *.pyc
 __pycache__
 
-.AppleDouble/
-.DS_Store/
+.AppleDouble
+.DS_Store
 
 env/
