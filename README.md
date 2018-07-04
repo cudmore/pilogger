@@ -1,5 +1,35 @@
 # Raspberry Pi Temperature Logger
 
+## To do
+
+There is a race condition when starting pilogger.service at boot
+
+see: https://unix.stackexchange.com/questions/436666/run-service-after-ttyusb0-becomes-available
+
+get rid of pilogger.service and make
+
+file
+
+/etc/udev/rules.d/99-serial-logger.rules
+
+with 
+
+SUBSYSTEM=="tty", ACTION=="add", KERNEL=="ttyUSB0", RUN+="/serial_script.sh"
+
+
+or (did this and it works)
+
+remove `WantedBy=default.target` from pilogger.service
+
+and make file
+
+/etc/udev/rules.d/99-serial-logger.rules
+
+with
+
+SUBSYSTEM=="tty", KERNEL=="ttyUSB0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="your-serial-logger.service"
+
+
 ## Requirements
 
 	Raspberry Pi

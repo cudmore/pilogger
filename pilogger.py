@@ -1,28 +1,97 @@
-# Robert Cudmore
-# 20180628
+"""
+Author: Robert Cudmore
+Date: 20180628
+
+Purpose: Read sensor data either from a sensor attached to Pi (e.g. DHT sensor)
+	or, read sensor data from a sensor attached to an arduino (via serial)
+	
+To do: Implement reading from multiple sensors.
+	This will require adding column 'sensorID' to output file and
+	tweeking the javascript to correctly parse this new data
+	
+"""
 
 import sys, os, time, socket
+import threading, queue, serial
 from datetime import datetime
 
 import Adafruit_DHT
-
-"""
-import plotly
-import plotly.plotly as py
-from plotly.graph_objs import *
-"""
 
 # (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
 sensor = Adafruit_DHT.AM2302 
 pin = 3
 intervalSeconds = 60 # seconds
 
+# serial port connected to Arduino
+port = '/dev/ttyACM0'
+baud = 115200
 
-"""
-plotly.tools.set_credentials_file(username='cudmore', api_key='F9pRWozfv0eiHkARvr4S')
-"""
+# this is used by pilogger_app web interface, do not change
+savePath = '/home/pi/pilogger/log/pilogger.log'
 
-def test():
+#########################################################################
+class SerialThread(threading.Thread):
+	"""
+	A background thread to continuously monitor incoming serial data
+	"""
+	def __init__(self, inSerialQueue, outSerialQueue, errorSerialQueue, port='/dev/ttyACM0', baud=115200):
+		threading.Thread.__init__(self)
+		self.inSerialQueue = inSerialQueue
+		self.outSerialQueue = outSerialQueue
+		self.errorSerialQueue = errorSerialQueue
+		
+		try:
+			# there is no corresponding self.mySerial.close() ???
+			self.mySerial = serial.Serial(port, baud, timeout=0.5)
+		except (serial.SerialException) as e:
+			print('SERIAL ERROR: ', str(e))
+			errorSerialQueue.put(str(e))
+		except:
+			print('SERIAL ERROR')
+			raise
+
+	def run(self):
+		while True:
+			#
+			# as we receive serial input from arduino, put it in the outSerialQueue
+			# this serial input is usually (float) temperature readings
+			result = self.mySerial.readline()
+			if result is not None:
+				#print(result.decode())
+				self.outSerialQueue.put(result.decode())
+			
+			#
+			# process serial commands issued by parent in self.inSerialQueue
+			# and send them out the serial port
+			"""
+			try:
+				serialCommand = self.inSerialQueue.get(block=False, timeout=0)
+			except (queue.Empty) as e:
+				pass
+			else:
+				#logger.info('serialThread inSerialQueue: "' + str(serialCommand) + '"')
+				try:
+					if not serialCommand.endswith('\n'):
+						serialCommand += '\n'
+					self.mySerial.write(serialCommand.encode())
+					time.sleep(0.1)
+					
+					resp = self.mySerial.readline().decode().strip()
+					self.outSerialQueue.put(resp)
+					#logger.info('serialThread outSerialQueue: "' + str(resp) + '"')
+				except (serial.SerialException) as e:
+					#logger.error(str(e))
+					print(str(e))
+				except:
+					#logger.error('other exception in mySerialThread run')
+					raise
+			"""
+
+			# be sure to keep this here
+			time.sleep(0.2) # second
+
+#########################################################################
+def testdht():
 
 	humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 	
@@ -32,8 +101,8 @@ def test():
 		print('Failed to get reading. Try again!')
 	
 
+#########################################################################
 def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
-	savePath = '/home/pi/pilogger/log/pilogger.log'
 
 	# save to this file
 	"""
@@ -41,6 +110,13 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 	if not os.path.exists(savePath):
 		os.makedirs(savePath)
 	"""
+
+	inSerialQueue = queue.Queue() # put commands here to send out serial port
+	outSerialQueue = queue.Queue()  # receive data coming in on the serial port
+	errorSerialQueue = queue.Queue() 
+	mySerialThread = SerialThread(inSerialQueue, outSerialQueue, errorSerialQueue, port, baud)
+	mySerialThread.daemon = True
+	mySerialThread.start()
 
 	hostname = socket.gethostname()
 	
@@ -53,15 +129,6 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 	# initialize
 	lastTimeSeconds = 0
 
-	#
-	# set up an empty plot plot called 'room_control'
-	"""
-	trace0 = Scatter(x=[],y=[])
-	trace1 = Scatter(x=[],y=[])
-	data = [trace0, trace1]
-	py.plot(data, filename = 'room_control')
-	"""
-	
 	while True:
 	
 		# todo: merge nowSeconds and datetime_now (we are sampling time twice)
@@ -71,7 +138,28 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 		theDate = datetime_now.strftime('%Y-%m-%d')
 		theTime = datetime_now.strftime('%H:%M:%S')
 		
-		if nowSeconds > (lastTimeSeconds + intervalSeconds):
+		#
+		# serial in from arduino
+		# if we get data in outSerialQueue then process it
+		# this happens when arduino spits out a temperature value
+		try:
+			serialReceive = outSerialQueue.get(block=False, timeout=0)
+		except (queue.Empty) as e:
+			pass
+		else:
+			if serialReceive:
+				#print('serialReceive:', serialReceive)
+				temperature = float(serialReceive)
+				temperature = round(temperature,2)
+				humidity = ''
+				oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
+				print(oneLine)
+				with open(savePath, 'a') as f:
+					f.write(oneLine)
+			
+		#
+		# DHT sensor hooked up to Pi, read it at an interval
+		if False and nowSeconds > (lastTimeSeconds + intervalSeconds):
 		
 			print('reading')
 			
@@ -110,6 +198,7 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 		
 		time.sleep(1) # just so this code does not hang the system
 		
+#########################################################################
 if __name__ == '__main__':
 	runpilogger()
 	

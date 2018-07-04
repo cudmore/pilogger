@@ -111,7 +111,7 @@ python setup.py install
 deactivate
 
 echo ' '
-echo 'Done installing pilogger server. The pilogger server will run at boot.'
-echo 'To use the server, point your browser to:'
-echo "    http://$ip:5000"
+echo 'Done installing pilogger server.'
+echo 'The pilogger server will run at boot.'
+echo 'To start the server use "./pilogger start"'
 

@@ -5,3 +5,11 @@ __pycache__
 .DS_Store
 
 env/
+platformio/env/
+
+# ignore all platformio compiled code
+.pioenvs
+
+log/pilogger.log
+
+
