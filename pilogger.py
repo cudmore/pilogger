@@ -20,7 +20,7 @@ import Adafruit_DHT
 # (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
 sensor = Adafruit_DHT.AM2302 
 pin = 3
-intervalSeconds = 60 # seconds
+intervalSeconds = 10 # seconds
 
 # serial port connected to Arduino
 port = '/dev/ttyACM0'
@@ -55,10 +55,11 @@ class SerialThread(threading.Thread):
 			#
 			# as we receive serial input from arduino, put it in the outSerialQueue
 			# this serial input is usually (float) temperature readings
-			result = self.mySerial.readline()
-			if result is not None:
-				#print(result.decode())
-				self.outSerialQueue.put(result.decode())
+			if self.mySerial:
+				result = self.mySerial.readline()
+				if result is not None:
+					#print(result.decode())
+					self.outSerialQueue.put(result.decode())
 			
 			#
 			# process serial commands issued by parent in self.inSerialQueue
@@ -111,15 +112,20 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 		os.makedirs(savePath)
 	"""
 
+	print('runpilogger start')
+	
 	inSerialQueue = queue.Queue() # put commands here to send out serial port
 	outSerialQueue = queue.Queue()  # receive data coming in on the serial port
 	errorSerialQueue = queue.Queue() 
 	mySerialThread = SerialThread(inSerialQueue, outSerialQueue, errorSerialQueue, port, baud)
 	mySerialThread.daemon = True
 	mySerialThread.start()
+	print('runpilogger started SerialThread')
 
 	hostname = socket.gethostname()
 	
+	print('runpilogger savePath:', savePath)
+
 	# make file with header if necc.
 	if not os.path.isfile(savePath):
 		with open(savePath, 'a') as f:
@@ -153,10 +159,15 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 				temperature = round(temperature,2)
 				humidity = ''
 				oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
+				print(savePath)
 				print(oneLine)
 				with open(savePath, 'a') as f:
 					f.write(oneLine)
 			
+		#
+		# 20180705, turned off DHT for now
+		# this needs to be a background thread
+		
 		#
 		# DHT sensor hooked up to Pi, read it at an interval
 		if False and nowSeconds > (lastTimeSeconds + intervalSeconds):
@@ -196,7 +207,9 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 			with open(savePath, 'a') as f:
 				f.write(oneLine)
 		
-		time.sleep(1) # just so this code does not hang the system
+		time.sleep(0.2) # just so this code does not hang the system
+
+	print('runpilogger stop')
 		
 #########################################################################
 if __name__ == '__main__':

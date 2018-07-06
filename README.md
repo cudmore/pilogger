@@ -35,14 +35,19 @@ SUBSYSTEM=="tty", KERNEL=="ttyUSB0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="your-s
 	Raspberry Pi
 	Temperature sensor like an [AM2302](https://www.adafruit.com/product/393)
 	
-## Install
+## Install pilogger server
+	
+	# install git if neccessary
+	sudo apt-get install git
 	
 	git clone https://github.com/cudmore/pilogger.git
 	
 	cd pilogger
-	
-	./install-pilogger.sh
-	
+	./install-pilogger
+
+## Install platformio and upload code to a microcontroller
+
+	See [platformio](platformio)	
 ## Usage
 
 Browse an up-to-date plot and table of temperature and humidity readings.

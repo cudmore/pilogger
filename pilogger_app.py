@@ -5,13 +5,15 @@ import sys, threading
 
 from flask import Flask, render_template, send_file, Response
 
-from pilogger import runpilogger
+#from pilogger import runpilogger
+import pilogger
 
 app = Flask(__name__)
 
-piloggerThread = threading.Thread(target = runpilogger)
+piloggerThread = threading.Thread(target = pilogger.runpilogger)
 piloggerThread.daemon = True
 piloggerThread.start()
+print(1)
 
 @app.route('/')
 def hello_world():
