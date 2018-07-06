@@ -13,7 +13,7 @@ int analogPin = 0;
 String inString;
 
 long int lastReading = 0; // ms
-long int readingInterval = 3 * 1000; // ms
+long int readingInterval = 60 * 1000; // ms
 
 void setup()
 {
