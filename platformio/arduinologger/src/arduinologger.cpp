@@ -34,9 +34,15 @@ void loop()
 	long int now = millis();
 	if (now > (lastReading + readingInterval)) {
 		// generate fake temperature data
+		/*
 		float wholeNumber = analogRead(analogPin); // range is [0, 1023]
 		float decimal = analogRead(analogPin) / 1023.0; // range is [0, 1023]
 		float temperature = wholeNumber + decimal;
+		*/
+		
+		// this number needs to be converted to farenheight
+		int temperature = analogRead(analogPin); // range is [0, 1023]
+		
 		Serial.println(temperature); //println casts float to str, 2 decimal places
 		
 		lastReading = now;
