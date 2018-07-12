@@ -15,19 +15,25 @@ import sys, os, time, socket
 import threading, queue, serial
 from datetime import datetime
 
-import Adafruit_DHT
+try:
+	import Adafruit_DHT 
+except:
+	Adafruit_DHT = None
 
 # (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
-sensor = Adafruit_DHT.AM2302 
-pin = 3
-intervalSeconds = 10 # seconds
+g_dhtSensor = {}
+g_dhtSensor['enable'] = False
+g_dhtSensor['sensorType'] = Adafruit_DHT.AM2302 
+g_dhtSensor['pin'] = 4
+g_dhtSensor['intervalSeconds'] = 60
 
 # serial port connected to Arduino
-port = '/dev/ttyACM0'
-baud = 115200
+g_serial = {}
+g_serial['port'] = '/dev/ttyACM0'
+g_serial['baud'] = 115200
 
 # this is used by pilogger_app web interface, do not change
-savePath = '/home/pi/pilogger/log/pilogger.log'
+g_savePath = '/home/pi/pilogger/log/pilogger.log'
 
 #########################################################################
 class SerialThread(threading.Thread):
@@ -94,7 +100,7 @@ class SerialThread(threading.Thread):
 #########################################################################
 def testdht():
 
-	humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
+	humidity, temperature = Adafruit_DHT.read_retry(dhtSensor['sensorType'], dhtSensor['pin'])
 	
 	if humidity is not None and temperature is not None:
 		print('Temp={0:0.1f}*  Humidity={1:0.1f}%'.format(temperature, humidity))
@@ -103,13 +109,13 @@ def testdht():
 	
 
 #########################################################################
-def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
+def runpilogger(dhtSensorDict, serialDict):
 
 	# save to this file
 	"""
 	# make directory if necc.
-	if not os.path.exists(savePath):
-		os.makedirs(savePath)
+	if not os.path.exists(g_savePath):
+		os.makedirs(g_savePath)
 	"""
 
 	print('runpilogger start')
@@ -117,18 +123,18 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 	inSerialQueue = queue.Queue() # put commands here to send out serial port
 	outSerialQueue = queue.Queue()  # receive data coming in on the serial port
 	errorSerialQueue = queue.Queue() 
-	mySerialThread = SerialThread(inSerialQueue, outSerialQueue, errorSerialQueue, port, baud)
+	mySerialThread = SerialThread(inSerialQueue, outSerialQueue, errorSerialQueue, serialDict['port'], serialDict['baud'])
 	mySerialThread.daemon = True
 	mySerialThread.start()
 	print('runpilogger started SerialThread')
 
 	hostname = socket.gethostname()
 	
-	print('runpilogger savePath:', savePath)
+	print('runpilogger g_savePath:', g_savePath)
 
 	# make file with header if necc.
-	if not os.path.isfile(savePath):
-		with open(savePath, 'a') as f:
+	if not os.path.isfile(g_savePath):
+		with open(g_savePath, 'a') as f:
 			headerLine = 'Hostname,Date,Time,Seconds,Temperature,Humidity' + '\n'
 			f.write(headerLine)
 			
@@ -159,9 +165,9 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 				temperature = round(temperature,2)
 				humidity = ''
 				oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
-				print(savePath)
+				print(g_savePath)
 				print(oneLine)
-				with open(savePath, 'a') as f:
+				with open(g_savePath, 'a') as f:
 					f.write(oneLine)
 			
 		#
@@ -170,33 +176,20 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 		
 		#
 		# DHT sensor hooked up to Pi, read it at an interval
-		if False and nowSeconds > (lastTimeSeconds + intervalSeconds):
+		if dhtSensorDict['enable'] and nowSeconds > (lastTimeSeconds + dhtSensor['intervalSeconds']):
 		
 			print('reading')
 			
-			humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
+			humidity, temperature = Adafruit_DHT.read_retry(dhtSensor['sensorType'], dhtSensor['pin'])
 			
 			if humidity is not None and temperature is not None:
 				humidity = round(humidity,2)
 				temperature = round(temperature,2)
 				#print(theDate, theTime, temperature, humidity)
-				
-				#
-				# append to plotly
-				"""
-				new_data = Scatter(x=[datetime_now], y=[temperature] )
-				data = Data( [ new_data ] )
-				
-				trace0 = Scatter(x=[datetime_now],y=[temperature])
-				trace1 = Scatter(x=[datetime_now],y=[humidity])
-				data = [trace0, trace1]
-				plot_url = py.plot(data, filename='room_control', fileopt='extend')
-				"""
-				
 			else:
 				humidity = ''
 				temperature = ''
-				print('Failed to get reading. Try again!')
+				print('Failed to get DHT reading.')
 
 			# even when we fail
 			lastTimeSeconds = nowSeconds
@@ -204,7 +197,7 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 			oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
 			print(oneLine)
 						
-			with open(savePath, 'a') as f:
+			with open(g_savePath, 'a') as f:
 				f.write(oneLine)
 		
 		time.sleep(0.2) # just so this code does not hang the system
@@ -213,5 +206,5 @@ def runpilogger(sensor=Adafruit_DHT.AM2302 , pin=3, interval=60):
 		
 #########################################################################
 if __name__ == '__main__':
-	runpilogger()
+	runpilogger(g_dhtSensor, g_serial)
 	
