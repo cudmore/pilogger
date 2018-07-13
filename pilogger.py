@@ -22,12 +22,13 @@ except:
 
 print('a')
 
-# (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
-g_dhtSensor = {}
-g_dhtSensor['enable'] = False
-g_dhtSensor['sensorType'] = Adafruit_DHT.AM2302 
-g_dhtSensor['pin'] = 4
-g_dhtSensor['intervalSeconds'] = 60
+if Adafruit_DHT:
+	# (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
+	g_dhtSensor = {}
+	g_dhtSensor['enable'] = False
+	g_dhtSensor['sensorType'] = Adafruit_DHT.AM2302 if Adafruit_DHT is not None else None
+	g_dhtSensor['pin'] = 4
+	g_dhtSensor['intervalSeconds'] = 60
 
 # serial port connected to Arduino
 g_serial = {}
@@ -35,7 +36,10 @@ g_serial['port'] = '/dev/ttyACM0'
 g_serial['baud'] = 115200
 
 # this is used by pilogger_app web interface, do not change
-g_savePath = '/home/pi/pilogger/log/pilogger.log'
+g_saveFolder = '/home/pi/pilogger/log/'
+if not os.path.isdir(g_saveFolder):
+	os.mkdir(g_saveFolder)
+g_savePath = os.path.join(g_saveFolder, 'pilogger.log')
 
 print('b')
 
@@ -177,8 +181,8 @@ def runpilogger(dhtSensorDict=g_dhtSensor, serialDict=g_serial):
 				humidity = ''
 				
 				oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
-				print(g_savePath)
-				print(oneLine)
+				#print(g_savePath)
+				print(oneLine.strip())
 				with open(g_savePath, 'a') as f:
 					f.write(oneLine)
 			
@@ -188,7 +192,7 @@ def runpilogger(dhtSensorDict=g_dhtSensor, serialDict=g_serial):
 		
 		#
 		# DHT sensor hooked up to Pi, read it at an interval
-		if dhtSensorDict['enable'] and nowSeconds > (lastTimeSeconds + dhtSensor['intervalSeconds']):
+		if Adafruit_DHT is not None and dhtSensorDict['enable'] and nowSeconds > (lastTimeSeconds + dhtSensor['intervalSeconds']):
 		
 			print('reading')
 			

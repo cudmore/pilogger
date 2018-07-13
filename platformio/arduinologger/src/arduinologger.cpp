@@ -13,7 +13,8 @@ int analogPin = 0;
 String inString;
 
 long int lastReading = 0; // ms
-long int readingInterval = 60 * 1000; // 60 * ms --> seconds
+//long int readingInterval = 3 * 1000; // 60 * 1000 ms --> 60 seconds
+long int readingInterval = 400; // 60 * 1000 ms --> 60 seconds
 
 void setup()
 {
