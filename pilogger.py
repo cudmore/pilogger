@@ -20,6 +20,8 @@ try:
 except:
 	Adafruit_DHT = None
 
+print('a')
+
 # (Adafruit_DHT.DHT11, Adafruit_DHT.DHT22, Adafruit_DHT.AM2302)
 g_dhtSensor = {}
 g_dhtSensor['enable'] = False
@@ -34,6 +36,8 @@ g_serial['baud'] = 115200
 
 # this is used by pilogger_app web interface, do not change
 g_savePath = '/home/pi/pilogger/log/pilogger.log'
+
+print('b')
 
 #########################################################################
 class SerialThread(threading.Thread):
@@ -98,6 +102,7 @@ class SerialThread(threading.Thread):
 			time.sleep(0.2) # second
 
 #########################################################################
+"""
 def testdht():
 
 	humidity, temperature = Adafruit_DHT.read_retry(dhtSensor['sensorType'], dhtSensor['pin'])
@@ -106,10 +111,10 @@ def testdht():
 		print('Temp={0:0.1f}*  Humidity={1:0.1f}%'.format(temperature, humidity))
 	else:
 		print('Failed to get reading. Try again!')
-	
+"""	
 
 #########################################################################
-def runpilogger(dhtSensorDict, serialDict):
+def runpilogger(dhtSensorDict=g_dhtSensor, serialDict=g_serial):
 
 	# save to this file
 	"""
@@ -155,15 +160,22 @@ def runpilogger(dhtSensorDict, serialDict):
 		# if we get data in outSerialQueue then process it
 		# this happens when arduino spits out a temperature value
 		try:
+			# expecting serialReceive to just be a number
 			serialReceive = outSerialQueue.get(block=False, timeout=0)
 		except (queue.Empty) as e:
 			pass
 		else:
 			if serialReceive:
 				#print('serialReceive:', serialReceive)
-				temperature = float(serialReceive)
-				temperature = round(temperature,2)
+				# this is for original fake date
+				#temperature = float(serialReceive)
+				#temperature = round(temperature,2)
+				
+				serialReceive = serialReceive.strip()
+				
+				temperature = serialReceive
 				humidity = ''
+				
 				oneLine = hostname + ',' + theDate + ',' + theTime + ',' + str(nowSeconds) + "," + str(temperature) + "," + str(humidity) + "\n"
 				print(g_savePath)
 				print(oneLine)
@@ -206,5 +218,7 @@ def runpilogger(dhtSensorDict, serialDict):
 		
 #########################################################################
 if __name__ == '__main__':
+	print('c')
+
 	runpilogger(g_dhtSensor, g_serial)
 	
